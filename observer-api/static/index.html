@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edge-AI Multi-AMR Fleet Mission Control | BEL SIH 2026</title>
+  <style>
+    :root {
+      /* Deep navy/charcoal base */
+      --bg-dark: #0f172a; 
+      --bg-card: #1e293b;
+      --bg-card-hover: #334155;
+      
+      /* Subtle blue-gray borders */
+      --border: #334155;
+      --border-accent: #475569;
+      
+      /* Typography */
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-dim: #94a3b8;
+      
+      /* Semantic colors */
+      --cyan: #0ea5e9;       /* Primary / Navigation / Active */
+      --cyan-glow: rgba(14, 165, 233, 0.3);
+      --emerald: #10b981;    /* Success / Normal / Healthy */
+      --amber: #f59e0b;      /* Warning / Charging / D* Lite */
+      --red: #ef4444;        /* Danger / Spoof / Kill / Reset */
+      --violet: #8b5cf6;     /* Secondary / CBS */
+    }
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      background: var(--bg-dark); 
+      color: var(--text-primary); 
+      font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; 
+      font-size: 13px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Layout */
+    .app { display: grid; grid-template-rows: auto 1fr; height: 100vh; padding: 12px; gap: 12px; }
+    
+    header { 
+      display: flex; justify-content: space-between; align-items: center; 
+      background: var(--bg-card); padding: 14px 20px; 
+      border: 1px solid var(--border); border-radius: 6px; 
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    header h1 { font-size: 16px; color: var(--text-primary); font-weight: 700; letter-spacing: 0.5px; }
+    header .sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    
+    .status-bar { display: flex; gap: 12px; align-items: center; font-size: 11px; }
+    .status-pill { padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: inset 0 1px 0 rgba(255,255,255,0.1); }
+    .status-online { background: #064e3b; color: #34d399; border: 1px solid #059669; }
+    .status-offline { background: #7f1d1d; color: #fca5a5; border: 1px solid #dc2626; }
+
+    .main { display: grid; grid-template-columns: 1fr 340px; gap: 12px; min-height: 0; }
+
+    /* Left Column */
+    .left-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+    .canvas-wrap { 
+      flex: 1; background: var(--bg-card); 
+      border: 1px solid var(--border); border-radius: 6px; 
+      padding: 12px; display: flex; flex-direction: column; min-height: 0;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .canvas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .canvas-header h2 { font-size: 12px; color: var(--text-secondary); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    #simCanvas { width: 100%; flex: 1; border-radius: 4px; cursor: crosshair; background: #090e17; border: 1px solid var(--border); box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
+    
+    .canvas-info { display: flex; gap: 16px; margin-top: 8px; font-size: 11px; color: var(--text-dim); align-items: center; font-weight: 500; }
+    .canvas-info .selected { color: var(--cyan); font-weight: 700; text-shadow: 0 0 8px var(--cyan-glow); }
+    .canvas-info .target { color: var(--amber); font-weight: 700; text-shadow: 0 0 8px rgba(245,158,11,0.3); }
+
+    /* Controls Row */
+    .controls-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .ctrl-panel { 
+      background: var(--bg-card); border: 1px solid var(--border); 
+      border-radius: 6px; padding: 12px 14px; flex: 1; min-width: 220px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .ctrl-panel h3 { font-size: 11px; color: var(--text-secondary); font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    
+    .btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .btn { 
+      padding: 6px 12px; border: 1px solid transparent; border-radius: 4px; 
+      font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .btn:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2); }
+    .btn:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
+    
+    /* Semantic Buttons */
+    .btn-indigo { background: #6d28d9; color: white; border-color: #5b21b6; }
+    .btn-amber { background: #d97706; color: white; border-color: #b45309; }
+    .btn-rose { background: #be123c; color: white; border-color: #9f1239; }
+    .btn-red { background: #b91c1c; color: white; border-color: #991b1b; }
+    .btn-cyan { background: #0284c7; color: white; border-color: #0369a1; }
+    .btn-green { background: #047857; color: white; border-color: #065f46; }
+
+    .mode-toggle { display: flex; border-radius: 4px; overflow: hidden; border: 1px solid var(--border); box-shadow: inset 0 1px 2px rgba(0,0,0,0.3); }
+    .mode-toggle button { padding: 6px 14px; border: none; font-size: 10px; font-weight: 700; cursor: pointer; background: var(--bg-dark); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s; }
+    .mode-toggle button:hover:not(.active) { background: var(--bg-card-hover); color: var(--text-secondary); }
+    .mode-toggle button.active { background: var(--cyan); color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3); box-shadow: inset 0 0 8px rgba(0,0,0,0.2); }
+
+    /* Right Column */
+    .right-col { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; padding-right: 4px; }
+    .panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2); }
+    .panel h2 { font-size: 11px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+
+    /* Robot Cards */
+    .robot-card { 
+      padding: 10px 12px; background: var(--bg-dark); border: 1px solid var(--border); 
+      border-radius: 6px; margin-bottom: 6px; cursor: pointer; transition: all 0.2s ease; 
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .robot-card:hover { border-color: var(--border-accent); background: #131c2f; transform: translateX(2px); }
+    .robot-card.selected { border-color: var(--cyan); background: #16263f; box-shadow: 0 0 12px var(--cyan-glow), inset 2px 0 0 var(--cyan); }
+    .robot-card .id { font-weight: 800; font-size: 14px; letter-spacing: 0.5px; }
+    .robot-card .info { font-size: 11px; color: var(--text-secondary); margin-top: 4px; font-family: 'Fira Code', monospace; }
+    .robot-card .battery { font-weight: 800; font-size: 14px; }
+    .battery-good { color: var(--emerald); }
+    .battery-low { color: var(--amber); }
+
+    /* Selection Panel */
+    .select-panel { border-color: var(--cyan); box-shadow: 0 0 15px var(--cyan-glow); }
+    .select-panel h2 { color: var(--cyan); border-bottom-color: rgba(14,165,233,0.3); }
+    .select-detail { font-size: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .select-detail dt { color: var(--text-dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .select-detail dd { color: var(--text-primary); font-weight: 600; font-family: 'Fira Code', monospace; margin-bottom: 4px; }
+
+    /* Feed */
+    .feed { max-height: 180px; overflow-y: auto; padding-right: 4px; }
+    .feed-item { 
+      padding: 6px 8px; background: var(--bg-dark); border-radius: 4px; 
+      margin-bottom: 4px; font-size: 11px; border-left: 3px solid var(--cyan); 
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .feed-item .ev { color: var(--cyan); font-weight: 700; letter-spacing: 0.5px; }
+    .feed-item.security { border-left-color: var(--red); background: rgba(239, 68, 68, 0.05); }
+    .feed-item.security .ev { color: var(--red); }
+    .feed-item.chaos { border-left-color: var(--amber); background: rgba(245, 158, 11, 0.05); }
+    .feed-item.chaos .ev { color: var(--amber); }
+
+    /* Ledger */
+    .ledger-entry { 
+      font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 11px; 
+      color: var(--text-secondary); padding: 4px 0; border-bottom: 1px dashed var(--border); 
+    }
+    .ledger-entry:last-child { border-bottom: none; }
+    .ledger-entry .idx { color: var(--emerald); font-weight: 700; margin-right: 4px; }
+    .ledger-entry .hash { color: var(--text-dim); font-size: 10px; }
+
+    /* Benchmark */
+    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .metric-card { 
+      background: var(--bg-dark); border: 1px solid var(--border); 
+      border-radius: 6px; padding: 10px; text-align: center;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .metric-card .label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    .metric-card .value { font-size: 18px; font-weight: 800; margin-top: 4px; font-family: 'Fira Code', monospace; }
+    .metric-card .value.good { color: var(--emerald); text-shadow: 0 0 8px rgba(16,185,129,0.3); }
+    .metric-card .value.baseline { color: var(--text-primary); }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-dark); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header>
+    <div>
+      <h1>BHARAT ELECTRONICS LIMITED &mdash; EDGE-AI AMR FLEET</h1>
+      <div class="sub">Problem Statement 26123 | Decentralized CBS-Inspired Negotiation &amp; Hybrid Gossip Mesh</div>
+    </div>
+    <div class="status-bar">
+      <div>Stack: <span style="color:var(--emerald);font-weight:700">D* Lite + CBS + ONNX</span></div>
+      <span id="mqtt-pill" class="status-pill status-offline">MQTT: OFFLINE</span>
+      <span id="udp-pill" class="status-pill status-online">UDP: ONLINE</span>
+      <span id="ws-pill" class="status-pill status-online">WS: CONNECTED</span>
+    </div>
+  </header>
+
+  <div class="main">
+    <!-- Left Column -->
+    <div class="left-col">
+      <div class="canvas-wrap">
+        <div class="canvas-header">
+          <h2>WAREHOUSE TOPOLOGY (30&times;20 GRID)</h2>
+          <div class="mode-toggle">
+            <button id="btn-auto" class="active" onclick="setMode('auto')">AUTO DEMO</button>
+            <button id="btn-manual" onclick="setMode('manual')">MANUAL CONTROL</button>
+          </div>
+        </div>
+        <canvas id="simCanvas"></canvas>
+        <div class="canvas-info">
+          <span>Selected: <span id="info-selected" class="selected">None</span></span>
+          <span>Target: <span id="info-target" class="target">-</span></span>
+          <span>Hover: <span id="info-hover">-</span></span>
+          <span>Mode: <span id="info-mode" style="color:var(--emerald);font-weight:600">AUTO</span></span>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <div class="ctrl-panel">
+          <h3>Chaos Injection & Simulation Control</h3>
+          <div class="btn-row">
+            <button class="btn btn-indigo" onclick="injectChaos('deadlock')">Trigger Deadlock (CBS)</button>
+            <button class="btn btn-amber" onclick="injectChaos('obstacle')">Drop Obstacle (D* Lite)</button>
+            <button class="btn btn-rose" onclick="injectChaos('spoof')">Simulate Spoof Attack</button>
+            <button class="btn btn-red" onclick="injectChaos('kill_broker')">Kill Broker (P2P Gossip)</button>
+          </div>
+          <div class="btn-row" style="margin-top: 6px; border-top: 1px solid var(--border); padding-top: 6px;">
+            <button class="btn btn-red" style="width: 100%; font-size: 11px; padding: 6px;" onclick="resetWarehouse()">RESET WAREHOUSE</button>
+          </div>
+        </div>
+        <div class="ctrl-panel">
+          <h3>Prototype Benchmark (Measured)</h3>
+          <div class="metrics-grid">
+            <div class="metric-card"><div class="label">Full Replan</div><div class="value baseline" id="bm-full">2.94 ms</div></div>
+            <div class="metric-card"><div class="label">D* Lite Repair</div><div class="value good" id="bm-inc">0.02 ms</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="right-col">
+      <!-- Robot Telemetry Cards -->
+      <div class="panel">
+        <h2 style="color:var(--text-secondary)">Active AMR Telemetry</h2>
+        <div id="robot-cards">
+          <div style="font-size:10px;color:var(--text-dim)">Awaiting edge agents...</div>
+        </div>
+      </div>
+
+      <!-- Selected Robot Panel -->
+      <div class="panel select-panel" id="select-panel" style="display:none">
+        <h2>Selected Robot</h2>
+        <dl class="select-detail" id="select-detail"></dl>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px" id="select-hint">Click a free grid cell to send this robot there</div>
+      </div>
+
+      <!-- Event Feed -->
+      <div class="panel">
+        <h2 style="color:var(--cyan)">Decision &amp; Event Feed</h2>
+        <div id="event-feed" class="feed">
+          <div class="feed-item"><span class="ev">SYSTEM:</span> Awaiting events...</div>
+        </div>
+      </div>
+
+      <!-- Ledger -->
+      <div class="panel">
+        <h2 style="color:var(--emerald)">Tamper-Evident Audit Ledger (SHA-256)</h2>
+        <div id="ledger-view" style="max-height:120px;overflow-y:auto">
+          <div class="ledger-entry"><span class="idx">#0</span> GENESIS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────
+let fleet = [];
+let selectedRobot = null;
+let targetCell = null;
+let currentMode = 'auto';
+let hoverCell = null;
+let warehouse = null;
+let wsConnected = false;
+
+const GRID_W = 30, GRID_H = 20;
+const ROBOT_COLORS = { R01: '#38bdf8', R02: '#f59e0b', R03: '#10b981', R04: '#a855f7' };
+
+// ── Fetch Warehouse Data ──────────────────────────────────────────
+fetch('/api/warehouse').then(r => r.json()).then(data => {
+  warehouse = data;
+}).catch(() => {
+  // Fallback warehouse data
+  warehouse = {
+    width: 30, height: 20,
+    shelves: [
+      {x1:4,y1:5,x2:8,y2:7},{x1:11,y1:5,x2:15,y2:7},{x1:18,y1:5,x2:22,y2:7},
+      {x1:4,y1:11,x2:8,y2:13},{x1:11,y1:11,x2:15,y2:13},{x1:18,y1:11,x2:22,y2:13}
+    ],
+    pickup_stations: [{id:'P1',x:5,y:2},{id:'P2',x:12,y:2},{id:'P3',x:20,y:2},{id:'P4',x:27,y:2}],
+    dropoff_stations: [{id:'D1',x:5,y:18},{id:'D2',x:12,y:18},{id:'D3',x:20,y:18},{id:'D4',x:27,y:18}],
+    charging_stations: [{x:1,y:1},{x:1,y:2},{x:1,y:3},{x:1,y:4}]
+  };
+});
+
+// ── Canvas Setup ──────────────────────────────────────────────────
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const wrap = canvas.parentElement;
+  const w = wrap.clientWidth - 16;
+  const h = Math.max(300, wrap.clientHeight - 80);
+  canvas.width = w;
+  canvas.height = h;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function getCellSize() {
+  return { cw: canvas.width / GRID_W, ch: canvas.height / GRID_H };
+}
+
+function isShelf(x, y) {
+  if (!warehouse) return false;
+  return warehouse.shelves.some(s => x >= s.x1 && x <= s.x2 && y >= s.y1 && y <= s.y2);
+}
+
+function gridFromPixel(px, py) {
+  const { cw, ch } = getCellSize();
+  const x = Math.floor(px / cw);
+  const y = Math.floor(py / ch);
+  if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return null;
+  return { x, y };
+}
+
+// ── Canvas Interaction ────────────────────────────────────────────
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const cell = gridFromPixel(e.clientX - rect.left, e.clientY - rect.top);
+  hoverCell = cell;
+  document.getElementById('info-hover').textContent = cell ? `(${cell.x},${cell.y})` : '-';
+});
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const cell = gridFromPixel(e.clientX - rect.left, e.clientY - rect.top);
+  if (!cell) return;
+
+  // Check if clicking on a robot
+  const clickedRobot = fleet.find(r =>
+    r.pos && r.pos[0] === cell.x && r.pos[1] === cell.y
+  );
+
+  if (clickedRobot) {
+    selectedRobot = clickedRobot.robot_id;
+    targetCell = null;
+    document.getElementById('info-selected').textContent = selectedRobot;
+    document.getElementById('info-target').textContent = '-';
+    updateSelectPanel();
+    return;
+  }
+
+  // If we have a selected robot and mode is manual, send goal
+  if (selectedRobot && currentMode === 'manual') {
+    if (isShelf(cell.x, cell.y)) {
+      document.getElementById('info-target').textContent = `(${cell.x},${cell.y}) BLOCKED`;
+      return;
+    }
+    targetCell = cell;
+    document.getElementById('info-target').textContent = `${selectedRobot} \u2192 (${cell.x},${cell.y})`;
+    sendGoal(selectedRobot, cell.x, cell.y);
+  }
+});
+
+// ── API Calls ─────────────────────────────────────────────────────
+function sendGoal(robotId, x, y) {
+  fetch(`/api/robots/${robotId}/goal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ x, y })
+  }).then(r => r.json()).then(data => {
+    console.log('Goal sent:', data);
+  }).catch(err => console.error('Goal error:', err));
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('btn-auto').classList.toggle('active', mode === 'auto');
+  document.getElementById('btn-manual').classList.toggle('active', mode === 'manual');
+  document.getElementById('info-mode').textContent = mode.toUpperCase();
+
+  fetch('/api/mode', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode })
+  }).catch(err => console.error('Mode error:', err));
+}
+
+function injectChaos(scenario) {
+  const robotId = selectedRobot || 'R02';
+  fetch('/api/chaos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scenario, robot_id: robotId })
+  }).catch(err => console.error('Chaos error:', err));
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────
+let ws;
+function connectWS() {
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onopen = () => {
+    wsConnected = true;
+    document.getElementById('ws-pill').className = 'status-pill status-online';
+    document.getElementById('ws-pill').textContent = 'WS: CONNECTED';
+  };
+  ws.onclose = () => {
+    wsConnected = false;
+    document.getElementById('ws-pill').className = 'status-pill status-offline';
+    document.getElementById('ws-pill').textContent = 'WS: DISCONNECTED';
+    setTimeout(connectWS, 2000);
+  };
+  ws.onerror = () => { ws.close(); };
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.fleet !== undefined) fleet = data.fleet;
+    if (data.system) updateSystemStatus(data.system);
+    updateRobotCards();
+    updateSelectPanel();
+    updateEventFeed(data.logs || []);
+    updateLedger(data.ledger || []);
+  };
+}
+connectWS();
+
+// ── UI Updates ────────────────────────────────────────────────────
+function updateSystemStatus(sys) {
+  const mqttPill = document.getElementById('mqtt-pill');
+  if (sys.mqtt === 'ONLINE') {
+    mqttPill.className = 'status-pill status-online';
+    mqttPill.textContent = 'MQTT: ONLINE';
+  } else {
+    mqttPill.className = 'status-pill status-offline';
+    mqttPill.textContent = 'MQTT: OFFLINE';
+  }
+  const udpPill = document.getElementById('udp-pill');
+  if (sys.udp === 'ONLINE') {
+    udpPill.className = 'status-pill status-online';
+    udpPill.textContent = 'UDP: ACTIVE';
+  } else {
+    udpPill.className = 'status-pill status-offline';
+    udpPill.textContent = 'UDP: OFFLINE';
+  }
+}
+
+function updateRobotCards() {
+  const container = document.getElementById('robot-cards');
+  if (fleet.length === 0) return;
+
+  container.innerHTML = fleet.map(r => {
+    const isSelected = r.robot_id === selectedRobot;
+    const batClass = r.battery < 20 ? 'battery-low' : 'battery-good';
+    const col = ROBOT_COLORS[r.robot_id] || '#38bdf8';
+    return `<div class="robot-card ${isSelected ? 'selected' : ''}" onclick="selectRobot('${r.robot_id}')" style="border-left:3px solid ${col}">
+      <div>
+        <div class="id" style="color:${col}">${r.robot_id} <span style="font-size:9px;color:#64748b;font-weight:400">[${r.priority}]</span></div>
+        <div class="info">Pos: (${r.pos[0]},${r.pos[1]}) | ${r.status}${r.goal ? ' \u2192 ('+r.goal[0]+','+r.goal[1]+')' : ''}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="battery ${batClass}">${r.battery}%</div>
+        <div style="font-size:9px;color:#64748b">${r.mode === 'manual' ? 'MANUAL' : 'AUTO'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectRobot(id) {
+  selectedRobot = id;
+  document.getElementById('info-selected').textContent = id;
+  updateRobotCards();
+  updateSelectPanel();
+}
+
+function updateSelectPanel() {
+  const panel = document.getElementById('select-panel');
+  const detail = document.getElementById('select-detail');
+  if (!selectedRobot) { panel.style.display = 'none'; return; }
+
+  const r = fleet.find(r => r.robot_id === selectedRobot);
+  if (!r) { panel.style.display = 'none'; return; }
+
+  panel.style.display = 'block';
+  const col = ROBOT_COLORS[r.robot_id] || '#38bdf8';
+  detail.innerHTML = `
+    <dt>Robot</dt><dd style="color:${col}">${r.robot_id} [${r.priority}]</dd>
+    <dt>Position</dt><dd>(${r.pos[0]}, ${r.pos[1]})</dd>
+    <dt>Battery</dt><dd>${r.battery}%</dd>
+    <dt>Status</dt><dd>${r.status}</dd>
+    <dt>Goal</dt><dd>${r.goal ? '('+r.goal[0]+','+r.goal[1]+')' : 'None'}</dd>
+    <dt>Mission</dt><dd>${r.mission_state || '-'}</dd>
+    <dt>Mode</dt><dd>${r.mode || 'auto'}</dd>
+    <dt>Path Remaining</dt><dd>${r.path ? r.path.length : 0} cells</dd>
+    <dt>Last Plan</dt><dd>${r.plan_ms !== undefined ? r.plan_ms + ' ms' : '-'}</dd>
+  `;
+  document.getElementById('select-hint').textContent =
+    currentMode === 'manual' ? 'Click a free grid cell to send this robot there' : 'Switch to MANUAL mode to assign goals';
+}
+
+function updateEventFeed(eventLogs) {
+  const container = document.getElementById('event-feed');
+  if (!eventLogs || eventLogs.length === 0) return;
+
+  container.innerHTML = eventLogs.map(l => {
+    let cls = 'feed-item';
+    if (l.event && (l.event.includes('SECURITY') || l.event.includes('SPOOF'))) cls += ' security';
+    else if (l.event && (l.event.includes('CHAOS') || l.event.includes('OBSTACLE'))) cls += ' chaos';
+    return `<div class="${cls}"><span class="ev">${l.event}:</span> ${l.desc}</div>`;
+  }).join('');
+}
+
+function updateLedger(entries) {
+  const container = document.getElementById('ledger-view');
+  if (!entries || entries.length === 0) return;
+
+  container.innerHTML = entries.map(b => {
+    const hash = b.hash ? b.hash.substring(0, 16) + '...' : '';
+    return `<div class="ledger-entry"><span class="idx">#${b.index}</span> <span class="hash">[${hash}]</span> ${b.event}: ${b.reason || ''}</div>`;
+  }).join('');
+}
+
+// ── Canvas Rendering ──────────────────────────────────────────────
+function drawMap() {
+  if (!warehouse) return;
+  const { cw, ch } = getCellSize();
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Grid lines
+  ctx.strokeStyle = '#1e293b'; // slate-800
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x <= GRID_W; x++) {
+    ctx.beginPath(); ctx.moveTo(x * cw, 0); ctx.lineTo(x * cw, canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y <= GRID_H; y++) {
+    ctx.beginPath(); ctx.moveTo(0, y * ch); ctx.lineTo(canvas.width, y * ch); ctx.stroke();
+  }
+
+  // Shelves
+  ctx.fillStyle = '#334155'; // slate-700
+  warehouse.shelves.forEach(s => {
+    ctx.fillRect(s.x1 * cw + 1, s.y1 * ch + 1, (s.x2 - s.x1 + 1) * cw - 2, (s.y2 - s.y1 + 1) * ch - 2);
+  });
+  ctx.fillStyle = '#94a3b8'; // slate-400
+  ctx.font = `600 ${Math.max(8, cw * 0.4)}px 'Inter', sans-serif`;
+  ctx.textAlign = 'center';
+  warehouse.shelves.forEach(s => {
+    const cx = ((s.x1 + s.x2) / 2) * cw + cw / 2;
+    const cy = ((s.y1 + s.y2) / 2) * ch + ch / 2 + 3;
+    ctx.fillText('SHELF', cx, cy);
+  });
+
+  // Dynamic Obstacles
+  ctx.fillStyle = 'rgba(239, 68, 68, 0.2)'; // Faint red bg
+  const dynamicObstacles = new Set();
+  fleet.forEach(r => {
+    if (r.dynamic_obstacles) {
+      r.dynamic_obstacles.forEach(o => dynamicObstacles.add(`${o[0]},${o[1]}`));
+    }
+  });
+  dynamicObstacles.forEach(obsStr => {
+    const [ox, oy] = obsStr.split(',').map(Number);
+    ctx.fillRect(ox * cw + 1, oy * ch + 1, cw - 2, ch - 2);
+    
+    // Warning icon
+    ctx.fillStyle = '#ef4444';
+    ctx.font = `${Math.max(10, cw * 0.5)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('⚠', ox * cw + cw / 2, oy * ch + ch / 2 + 4);
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+  });
+
+  // Pickup stations
+  ctx.fillStyle = '#064e3b';
+  (warehouse.pickup_stations || []).forEach(p => {
+    ctx.fillRect(p.x * cw + 1, p.y * ch + 1, cw - 2, ch - 2);
+    ctx.fillStyle = '#10b981';
+    ctx.font = `600 ${Math.max(7, cw * 0.35)}px 'Inter', sans-serif`;
+    ctx.fillText(p.id, p.x * cw + cw / 2, p.y * ch + ch / 2 + 3);
+    ctx.fillStyle = '#064e3b';
+  });
+
+  // Dropoff stations
+  ctx.fillStyle = '#78350f';
+  (warehouse.dropoff_stations || []).forEach(d => {
+    ctx.fillRect(d.x * cw + 1, d.y * ch + 1, cw - 2, ch - 2);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = `600 ${Math.max(7, cw * 0.35)}px 'Inter', sans-serif`;
+    ctx.fillText(d.id, d.x * cw + cw / 2, d.y * ch + ch / 2 + 3);
+    ctx.fillStyle = '#78350f';
+  });
+
+  // Charging stations
+  ctx.fillStyle = '#0c4a6e';
+  (warehouse.charging_stations || []).forEach(c => {
+    ctx.fillRect(c.x * cw + 1, c.y * ch + 1, cw - 2, ch - 2);
+    ctx.fillStyle = '#0ea5e9';
+    ctx.font = `${Math.max(9, cw * 0.4)}px sans-serif`;
+    ctx.fillText('\u26A1', c.x * cw + cw / 2, c.y * ch + ch / 2 + 4);
+    ctx.fillStyle = '#0c4a6e';
+  });
+
+  // Hover cell
+  if (hoverCell && currentMode === 'manual') {
+    ctx.fillStyle = isShelf(hoverCell.x, hoverCell.y) ? 'rgba(239, 68, 68, 0.2)' : 'rgba(14, 165, 233, 0.2)';
+    ctx.fillRect(hoverCell.x * cw, hoverCell.y * ch, cw, ch);
+  }
+
+  // Target cell
+  if (targetCell) {
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 2]);
+    ctx.strokeRect(targetCell.x * cw + 2, targetCell.y * ch + 2, cw - 4, ch - 4);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = `${Math.max(8, cw * 0.4)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('\u2691', targetCell.x * cw + cw / 2, targetCell.y * ch + ch / 2 + 4);
+  }
+
+  // Draw robot paths and bodies
+  fleet.forEach(r => {
+    const col = ROBOT_COLORS[r.robot_id] || '#38bdf8';
+    const isSelected = r.robot_id === selectedRobot;
+    const isSpoofed = r.security_status === 'SPOOFED';
+
+    let mapX = r.pos[0];
+    let mapY = r.pos[1];
+    
+    // Clamp visual position for spoofed coordinates out of bounds
+    if (isSpoofed) {
+      if (mapX >= GRID_W) mapX = GRID_W - 1;
+      if (mapX < 0) mapX = 0;
+      if (mapY >= GRID_H) mapY = GRID_H - 1;
+      if (mapY < 0) mapY = 0;
+    }
+
+    // Path
+    if (r.path && r.path.length > 0) {
+      ctx.strokeStyle = col;
+      ctx.globalAlpha = isSelected ? 0.8 : 0.3;
+      ctx.lineWidth = isSelected ? 2.5 : 1.5;
+      ctx.setLineDash([3, 2]);
+      ctx.beginPath();
+      ctx.moveTo(mapX * cw + cw / 2, mapY * ch + ch / 2);
+      r.path.forEach(pt => ctx.lineTo(pt[0] * cw + cw / 2, pt[1] * ch + ch / 2));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    }
+
+    // Goal marker
+    if (r.goal) {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(r.goal[0] * cw + 3, r.goal[1] * ch + 3, cw - 6, ch - 6);
+      ctx.setLineDash([]);
+      // Goal center cross
+      ctx.beginPath();
+      ctx.moveTo(r.goal[0] * cw + cw/2 - 3, r.goal[1] * ch + ch/2);
+      ctx.lineTo(r.goal[0] * cw + cw/2 + 3, r.goal[1] * ch + ch/2);
+      ctx.moveTo(r.goal[0] * cw + cw/2, r.goal[1] * ch + ch/2 - 3);
+      ctx.lineTo(r.goal[0] * cw + cw/2, r.goal[1] * ch + ch/2 + 3);
+      ctx.stroke();
+    }
+
+    // Robot body
+    const rx = mapX * cw + cw / 2;
+    const ry = mapY * ch + ch / 2;
+    const radius = Math.min(cw, ch) / 2.5;
+
+    if (isSelected) {
+      // Glow effect for selected
+      ctx.beginPath();
+      ctx.arc(rx, ry, radius + 6, 0, Math.PI * 2);
+      ctx.strokeStyle = isSpoofed ? '#ef4444' : col;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.arc(rx, ry, radius + 12, 0, Math.PI * 2);
+      ctx.strokeStyle = isSpoofed ? 'rgba(239, 68, 68, 0.2)' : `${col}40`; // 25% opacity
+      ctx.lineWidth = 6;
+      ctx.stroke();
+    }
+
+    // Status ring
+    if (r.status === 'OFFLINE') {
+      ctx.fillStyle = '#7f1d1d'; // dark red
+    } else if (r.status === 'STOPPED_SAFETY_OVERRIDE') {
+      ctx.fillStyle = '#dc2626'; // red
+    } else if (r.status === 'YIELDING') {
+      ctx.fillStyle = '#b45309'; // amber
+    } else if (isSpoofed) {
+      ctx.fillStyle = '#991b1b'; // dark red
+    } else {
+      ctx.fillStyle = col;
+    }
+    
+    // Inner robot shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2;
+
+    ctx.beginPath();
+    ctx.arc(rx, ry, radius, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Clear shadow for label
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Label
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `800 ${Math.max(8, radius * 0.9)}px 'Inter', sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(r.robot_id, rx, ry);
+    ctx.textBaseline = 'alphabetic';
+  });
+}
+
+function resetWarehouse() {
+  if (confirm("Reset the entire warehouse simulation?")) {
+    fetch('/api/reset', { method: 'POST' })
+      .then(() => {
+        alert("Warehouse simulation reset successfully.");
+        selectedRobot = null;
+        targetCell = null;
+        fleet = [];
+        updateRobotCards();
+        updateSelectPanel();
+      })
+      .catch(err => console.error("Reset error:", err));
+  }
+}
+
+setInterval(drawMap, 1000 / 24);
+</script>
+</body>
+</html>

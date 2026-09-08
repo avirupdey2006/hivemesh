@@ -1,0 +1,7 @@
+{
+  "python.defaultInterpreterPath": "D:\\sih-amr-fleet\\venv\\Scripts\\python.exe",
+  "python.analysis.extraPaths": [
+    "D:\\sih-amr-fleet\\venv\\Lib\\site-packages",
+    "D:\\sih-amr-fleet\\edge-agent"
+  ]
+}

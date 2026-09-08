@@ -1,0 +1,26 @@
+fleet_key: "BEL_SECRET_FLEET_KEY_2026_HMAC"
+robots:
+  - id: "R01"
+    start_pos: [2, 2]
+    priority_class: "HEAVY"
+    battery: 95.0
+    speed: 1.0
+    gossip_port: 5001
+  - id: "R02"
+    start_pos: [27, 2]
+    priority_class: "LIGHT"
+    battery: 88.0
+    speed: 1.0
+    gossip_port: 5002
+  - id: "R03"
+    start_pos: [2, 17]
+    priority_class: "EMPTY"
+    battery: 62.0
+    speed: 1.0
+    gossip_port: 5003
+  - id: "R04"
+    start_pos: [27, 17]
+    priority_class: "LIGHT"
+    battery: 79.0
+    speed: 1.0
+    gossip_port: 5004
