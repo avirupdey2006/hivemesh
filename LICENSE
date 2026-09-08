@@ -1,6 +1,9 @@
-MIT License
+Modified MIT License (with Attribution Requirement)
 
-Copyright (c) 2026 Avirup Dey
+Copyright (c) 2026 Avirup Dey, Team Loop-de-Code
+
+HiveMesh — Decentralized Edge-AI Fleet Coordination for Autonomous Mobile Robots
+Built for Smart India Hackathon 2026 (Problem Statement 26123, Bharat Electronics Limited)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -12,6 +15,15 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
 
+Additional Attribution Requirement: Any derivative work, fork, modified
+version, or upgraded implementation that is publicly distributed, published,
+or deployed must include clear and visible credit to the original author(s)
+and project — e.g., "Based on / Forked from HiveMesh by Avirup Dey, Team
+Loop-de-Code (github.com/avirupdey2006/hivemesh)" — in the derivative work's
+README, About page, or equivalent user-facing documentation. This requirement
+applies in addition to, and does not replace, the copyright notice retention
+required above.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,3 +31,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Third-party components used in this project (MQTT broker, ONNX Runtime,
+FastAPI, React, and other open-source libraries listed in requirements.txt
+and package.json) remain under their own respective licenses.
